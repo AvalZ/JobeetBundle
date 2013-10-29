@@ -1,0 +1,15 @@
+{% extends 'EnsJobeetBundle::layout.html.twig' %}
+
+{% block content %}
+<h1>Job creation</h1>
+
+    {{ form(form) }}
+
+<ul class="record_actions">
+    <li>
+        <a href="{{ path('ens_job') }}">
+            Back to the list
+        </a>
+    </li>
+</ul>
+{% endblock %}
