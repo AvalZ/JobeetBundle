@@ -1,0 +1,15 @@
+Ens\JobeetBundle\Entity\User:
+    type: entity
+    table: user
+    id:
+        id:
+            type: integer
+            generator: {strategy: AUTO}
+
+    fields:
+        username:
+            type: string
+            lenght: 255
+        password:
+            type: string
+            lenght: 255

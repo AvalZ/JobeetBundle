@@ -11,18 +11,21 @@ use Ens\JobeetBundle\Form\JobType;
  * Job controller.
  *
  */
-class JobController extends Controller {
+class JobController extends Controller
+{
 
     /**
      * Lists all Job entities.
      *
      */
-    public function indexAction() {
+    public function indexAction()
+    {
         $em = $this->getDoctrine()->getManager();
 
         $categories = $em->getRepository( 'EnsJobeetBundle:Category' )->getWithJobs();
 
-        foreach ( $categories as $category ) {
+        foreach ( $categories as $category )
+        {
             $category->setActiveJobs( $em->getRepository( 'EnsJobeetBundle:Job' )->getActiveJobs( $category->getId(), $this->container->getParameter( 'max_jobs_on_homepage' ) ) );
             $category->setMoreJobs( $em->getRepository( 'EnsJobeetBundle:Job' )->countActiveJobs( $category->getId() ) - $this->container->getParameter( 'max_jobs_on_homepage' ) );
         }
@@ -36,13 +39,15 @@ class JobController extends Controller {
      * Creates a new Job entity.
      *
      */
-    public function createAction() {
+    public function createAction()
+    {
         $entity = new Job();
         $request = $this->getRequest();
         $form = $this->createForm( new JobType(), $entity );
         $form->bind( $request );
 
-        if ( $form->isValid() ) {
+        if ( $form->isValid() )
+        {
             $em = $this->getDoctrine()->getManager();
 
             $em->persist( $entity );
@@ -69,7 +74,8 @@ class JobController extends Controller {
      *
      * @return \Symfony\Component\Form\Form The form
      */
-    private function createCreateForm( Job $entity ) {
+    private function createCreateForm( Job $entity )
+    {
         $form = $this->createForm( new JobType(), $entity, array(
             'action' => $this->generateUrl( 'ens_job_create' ),
             'method' => 'POST',
@@ -84,7 +90,8 @@ class JobController extends Controller {
      * Displays a form to create a new Job entity.
      *
      */
-    public function newAction() {
+    public function newAction()
+    {
         $entity = new Job();
         $entity->setType( 'full-time' );
         $form = $this->createForm( new JobType(), $entity );
@@ -99,13 +106,39 @@ class JobController extends Controller {
      * Finds and displays a Job entity.
      *
      */
-    public function showAction( $id ) {
+    public function showAction( $id )
+    {
         $em = $this->getDoctrine()->getManager();
 
         $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->getActiveJob( $id );
 
-        if ( !$entity ) {
+        if ( !$entity )
+        {
             throw $this->createNotFoundException( 'Unable to find Job entity.' );
+        }
+
+        $session = $this->getRequest()->getSession();
+
+        // fetch jobs already stored in the job history
+        $jobs = $session->get( 'job_history', array() );
+
+        // store the job as an array so we can put it in the session and avoid entity serialize errors
+        $job = array(
+            'id' => $entity->getId(),
+            'position' => $entity->getPosition(),
+            'company' => $entity->getCompany(),
+            'companyslug' => $entity->getCompanySlug(),
+            'locationslug' => $entity->getLocationSlug(),
+            'positionslug' => $entity->getPositionSlug()
+        );
+
+        if ( !in_array( $job, $jobs ) )
+        {
+            // add the current job at the beginning of the array
+            array_unshift( $jobs, $job );
+
+            // store the new job history back into the session
+            $session->set( 'job_history', array_slice( $jobs, 0, 3 ) );
         }
 
         $deleteForm = $this->createDeleteForm( $id );
@@ -115,12 +148,14 @@ class JobController extends Controller {
                     'delete_form' => $deleteForm->createView(), ) );
     }
 
-    public function previewAction( $token ) {
+    public function previewAction( $token )
+    {
         $em = $this->getDoctrine()->getManager();
 
         $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-        if ( !$entity ) {
+        if ( !$entity )
+        {
             throw $this->createNotFoundException( 'Unable to find Job entity.' );
         }
 
@@ -140,16 +175,19 @@ class JobController extends Controller {
      * Displays a form to edit an existing Job entity.
      *
      */
-    public function editAction( $token ) {
+    public function editAction( $token )
+    {
         $em = $this->getDoctrine()->getManager();
 
         $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-        if ( !$entity ) {
+        if ( !$entity )
+        {
             throw $this->createNotFoundException( 'Unable to find Job entity.' );
         }
 
-        if ( !$entity->getIsActivated() ) {
+        if ( !$entity->getIsActivated() )
+        {
             throw $this->createNotFoundException( 'Job is activated and cannot be edited' );
         }
         $editForm = $this->createForm( new JobType(), $entity );
@@ -169,7 +207,8 @@ class JobController extends Controller {
      *
      * @return \Symfony\Component\Form\Form The form
      */
-    private function createEditForm( Job $entity ) {
+    private function createEditForm( Job $entity )
+    {
         $form = $this->createForm( new JobType(), $entity, array(
             'action' => $this->generateUrl( 'ens_job_update', array( 'token' => $entity->getToken() ) ),
             'method' => 'PUT',
@@ -184,12 +223,14 @@ class JobController extends Controller {
      * Edits an existing Job entity.
      *
      */
-    public function updateAction( $token ) {
+    public function updateAction( $token )
+    {
         $em = $this->getDoctrine()->getManager();
 
         $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-        if ( !$entity ) {
+        if ( !$entity )
+        {
             throw $this->createNotFoundException( 'Unable to find Job entity.' );
         }
 
@@ -200,7 +241,8 @@ class JobController extends Controller {
 
         $editForm->bind( $request );
 
-        if ( $editForm->isValid() ) {
+        if ( $editForm->isValid() )
+        {
             $em->persist( $entity );
             $em->flush();
 
@@ -223,17 +265,20 @@ class JobController extends Controller {
      * Deletes a Job entity.
      *
      */
-    public function deleteAction( $token ) {
+    public function deleteAction( $token )
+    {
         $form = $this->createDeleteForm( $token );
         $request = $this->getRequest();
 
         $form->bind( $request );
 
-        if ( $form->isValid() ) {
+        if ( $form->isValid() )
+        {
             $em = $this->getDoctrine()->getManager();
             $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-            if ( !$entity ) {
+            if ( !$entity )
+            {
                 throw $this->createNotFoundException( 'Unable to find Job entity.' );
             }
 
@@ -251,23 +296,27 @@ class JobController extends Controller {
      *
      * @return \Symfony\Component\Form\Form The form
      */
-    private function createDeleteForm( $token ) {
+    private function createDeleteForm( $token )
+    {
         return $this->createFormBuilder( array( 'token' => $token ) )
                         ->add( 'token', 'hidden' )
                         ->getForm();
     }
 
-    public function publishAction( $token ) {
+    public function publishAction( $token )
+    {
         $form = $this->createPublishForm( $token );
         $request = $this->getRequest();
 
         $form->bind( $request );
 
-        if ( $form->isValid() ) {
+        if ( $form->isValid() )
+        {
             $em = $this->getDoctrine()->getManager();
             $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-            if ( !$entity ) {
+            if ( !$entity )
+            {
                 throw $this->createNotFoundException( 'Unable to find Job entity' );
             }
 
@@ -286,34 +335,40 @@ class JobController extends Controller {
                 ) ) );
     }
 
-    private function createPublishForm( $token ) {
+    private function createPublishForm( $token )
+    {
         return $this->createFormBuilder( array( 'token' => $token ) )
                         ->add( 'token', 'hidden' )
                         ->getForm()
         ;
     }
 
-    private function createExtendForm( $token ) {
+    private function createExtendForm( $token )
+    {
         return $this->createFormBuilder( array( 'token' => $token ) )
                         ->add( 'token', 'hidden' )
                         ->getForm();
     }
 
-    public function extendAction( $token ) {
+    public function extendAction( $token )
+    {
         $form = $this->createExtendForm( $token );
         $request = $this->getRequest();
 
         $form->bind( $request );
 
-        if ( $form->isValid() ) {
+        if ( $form->isValid() )
+        {
             $em = $this->getDoctrine()->getManager();
             $entity = $em->getRepository( 'EnsJobeetBundle:Job' )->findOneByToken( $token );
 
-            if ( !$entity ) {
+            if ( !$entity )
+            {
                 throw $this->createNotFoundException( 'Unable to find Job entity.' );
             }
 
-            if ( !$entity->extend() ) {
+            if ( !$entity->extend() )
+            {
                 throw $this->createNotFoundException( 'Unable to extend the Job.' );
             }
 

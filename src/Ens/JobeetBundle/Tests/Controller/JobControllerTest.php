@@ -4,9 +4,11 @@ namespace Ens\JobeetBundle\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class JobControllerTest extends WebTestCase {
+class JobControllerTest extends WebTestCase
+{
 
-    public function getExpiredJob() {
+    public function getExpiredJob()
+    {
         $kernel = static::createKernel();
         $kernel->boot();
         $em = $kernel->getContainer()->get( 'doctrine.orm.entity_manager' );
@@ -17,7 +19,8 @@ class JobControllerTest extends WebTestCase {
         return $query->getSingleResult();
     }
 
-    public function getMostRecentProgrammingJob() {
+    public function getMostRecentProgrammingJob()
+    {
         $kernel = static::createKernel();
         $kernel->boot();
         $em = $kernel->getContainer()->get( 'doctrine.orm.entity_manager' );
@@ -29,7 +32,8 @@ class JobControllerTest extends WebTestCase {
         return $query->getSingleResult();
     }
 
-    public function testIndex() {
+    public function testIndex()
+    {
         $client = static::createClient();
 
         $crawler = $client->request( 'GET', '/' );
@@ -64,7 +68,8 @@ class JobControllerTest extends WebTestCase {
         $this->assertTrue( 404 === $client->getResponse()->getStatusCode() );
     }
 
-    public function testJobForm() {
+    public function testJobForm()
+    {
         $client = static::createClient();
 
         $crawler = $client->request( 'GET', '/job/new' );
@@ -119,7 +124,8 @@ class JobControllerTest extends WebTestCase {
          */
     }
 
-    public function createJob( $values = array(), $publish = false ) {
+    public function createJob( $values = array(), $publish = false )
+    {
         $client = static::createClient();
         $crawler = $client->request( 'GET', '/job/new' );
         $form = $crawler->selectButton( 'Preview your job' )->form( array_merge( array(
@@ -136,7 +142,8 @@ class JobControllerTest extends WebTestCase {
         $client->submit( $form );
         $client->followRedirect();
 
-        if ( $publish ) {
+        if ( $publish )
+        {
             $crawler = $client->getCrawler();
             $form = $crawler->selectButton( 'Publish' )->form();
             $client->submit( $form );
@@ -145,7 +152,8 @@ class JobControllerTest extends WebTestCase {
         return $client;
     }
 
-    public function getJobByPosition( $position ) {
+    public function getJobByPosition( $position )
+    {
         $kernel = static::createKernel();
         $kernel->boot();
         $em = $kernel->getContainer()->get( 'doctrine.orm.entity_manager' );
@@ -156,7 +164,8 @@ class JobControllerTest extends WebTestCase {
         return $query->getSingleResult();
     }
 
-    public function testPublishJob() {
+    public function testPublishJob()
+    {
         $client = $this->createJob( array( 'job[position]' => 'F001' ) );
         $crawler = $client->getCrawler();
         $form = $crawler->selectButton( 'Publish' )->form();
@@ -171,14 +180,32 @@ class JobControllerTest extends WebTestCase {
         $this->assertTrue( 0 == $query->getSingleScalarResult() );
     }
 
-    public function testEditJob() {
+    public function testEditJob()
+    {
         $client = $this->createJob( array( 'job[position]' => 'F003' ), true );
         $crawler = $client->getCrawler();
         $crawler = $client->request( 'GET', sprintf( 'job/%s/edit', $this->getJobByPosition( 'F003' )->getToken() ) );
         $this->assertEquals( 404, $client->getResponse()->getStatusCode() );
     }
 
-    public function testExtendJob() {
+    public function testDeleteJob()
+    {
+        $client = $this->createJob( array( 'job[position]' => 'FOO2' ) );
+        $crawler = $client->getCrawler();
+        $form = $crawler->selectButton( 'Delete' )->form();
+        $client->submit( $form );
+
+        $kernel = static::createKernel();
+        $kernel->boot();
+        $em = $kernel->getContainer()->get( 'doctrine.orm.entity_manager' );
+
+        $query = $em->createQuery( 'SELECT count(j.id) from EnsJobeetBundle:Job j WHERE j.position = :position' );
+        $query->setParameter( 'position', 'FOO2' );
+        $this->assertTrue( 0 == $query->getSingleScalarResult() );
+    }
+
+    public function testExtendJob()
+    {
         // A job validity cannot be extended before the job expires soon
         $client = $this->createJob( array( 'job[position]' => 'FOO4' ), true );
         $crawler = $client->getCrawler();

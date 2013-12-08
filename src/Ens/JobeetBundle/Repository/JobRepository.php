@@ -4,9 +4,11 @@ namespace Ens\JobeetBundle\Repository;
 
 use Doctrine\ORM\EntityRepository;
 
-class JobRepository extends EntityRepository {
+class JobRepository extends EntityRepository
+{
 
-    public function getActiveJobs( $category_id = null, $max = null, $offset = null ) {
+    public function getActiveJobs( $category_id = null, $max = null, $offset = null )
+    {
         $qb = $this->createQueryBuilder( 'j' )
                 ->where( 'j.expires_at > :date' )
                 ->setParameter( 'date', date( 'Y-m-d H:i:s', time() ) )
@@ -14,15 +16,18 @@ class JobRepository extends EntityRepository {
                 ->setParameter( 'activated', 1 )
                 ->orderBy( 'j.created_at', 'DESC' );
 
-        if ( $max ) {
+        if ( $max )
+        {
             $qb->setMaxResults( $max );
         }
 
-        if ( $offset ) {
+        if ( $offset )
+        {
             $qb->setFirstResult( $offset );
         }
 
-        if ( $category_id ) {
+        if ( $category_id )
+        {
             $qb->andWhere( 'j.category = :category_id' )
                     ->setParameter( 'category_id', $category_id );
         }
@@ -32,7 +37,8 @@ class JobRepository extends EntityRepository {
         return $query->getResult();
     }
 
-    public function countActiveJobs( $category_id = null ) {
+    public function countActiveJobs( $category_id = null )
+    {
         $qb = $this->createQueryBuilder( 'j' )
                 ->select( 'count(j.id)' )
                 ->where( 'j.expires_at > :date' )
@@ -40,7 +46,8 @@ class JobRepository extends EntityRepository {
                 ->andWhere( 'j.is_activated = :activated' )
                 ->setParameter( 'activated', 1 );
 
-        if ( $category_id ) {
+        if ( $category_id )
+        {
             $qb->andWhere( 'j.category = :category_id' )
                     ->setParameter( 'category_id', $category_id );
         }
@@ -50,7 +57,8 @@ class JobRepository extends EntityRepository {
         return $query->getSingleScalarResult();
     }
 
-    public function getActiveJob( $id ) {
+    public function getActiveJob( $id )
+    {
         $query = $this->createQueryBuilder( 'j' )
                 ->where( 'j.id = :id' )
                 ->setParameter( 'id', $id )
@@ -61,14 +69,27 @@ class JobRepository extends EntityRepository {
                 ->setMaxResults( 1 )
                 ->getQuery();
 
-        try {
+        try
+        {
             $job = $query->getSingleResult();
         }
-        catch ( \Doctrine\Orm\NoResultException $e ) {
+        catch ( \Doctrine\Orm\NoResultException $e )
+        {
             $job = null;
         }
 
         return $job;
+    }
+
+    public function cleanup( $days )
+    {
+        $query = $this->createQueryBuilder( 'j' )
+                ->delete()
+                ->where( 'j.is_activated IS NULL' )
+                ->andWhere( 'j.created_at < :created_at' )->setParameter( 'created_at', date( 'Y-m-d', time() - 86400 * $days ) )
+                ->getQuery();
+
+        return $query->execute();
     }
 
 }
